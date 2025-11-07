@@ -9,15 +9,13 @@ void kill_machine(const char *msg) {
     exit(1);
 }
 void confirm_hex(FILE *f,char *title,const unsigned char *buf, size_t len) {
-    char *hex = malloc(len*2 + 1);
-    if (!hex) 
-    {
-        kill_machine("malloc failed");
-    }
     
-    sodium_bin2hex(hex, len*2 + 1, buf, len);
-    fprintf(f, "%s \n %s \n", title, hex);
-    free(hex);
+    fprintf(f, "%s\n", title );
+    for (size_t i = 0; i < len; i++)
+    {
+        fprintf(f,"%02x",buf[i]);
+    }
+    fprintf(f,"\n");
 }
 
 
@@ -58,18 +56,19 @@ int main(int argumentc,char *argumentv[]) {
         else if(strcmp(argumentv[i],"-a")==0 && i+1<argumentc)
         {
             i++;
-            char *hex=argumentv[i];
+                        //char *hex=argumentv[i];
+
             
-            sodium_hex2bin(alice_private, sizeof(alice_private), hex, strlen(hex), NULL, &bin_len, NULL); 
+            sodium_hex2bin(alice_private, sizeof(alice_private), argumentv[i], strlen(argumentv[i]), NULL, &bin_len, NULL); 
             alice_is_produced=1;
             
         }
         else if(strcmp(argumentv[i],"-b")==0 && i+1<argumentc)
         {
             i++;
-            char *hex=argumentv[i];
+            //char *hex=argumentv[i];
              
-            sodium_hex2bin(bob_private, sizeof(bob_private), hex, strlen(hex), NULL, &bin_len, NULL);
+            sodium_hex2bin(bob_private, sizeof(bob_private), argumentv[i], strlen(argumentv[i]), NULL, &bin_len, NULL);
             bob_is_produced=1; 
         }
         else if (strcmp(argumentv[i],"-c")==0 && i+1<argumentc)
@@ -98,14 +97,14 @@ int main(int argumentc,char *argumentv[]) {
     
         if (!_file_) kill_machine("Missing -o <output file>");
 
-        if(alice_is_produced==1){
+        if(alice_is_produced ){
             crypto_scalarmult_base(alice_public,alice_private);
         }
         else{
             crypto_box_keypair(alice_public,alice_private);
         }
         
-        if(bob_is_produced==1){
+        if(bob_is_produced ){
             crypto_scalarmult_base(bob_public,bob_private);
         }
         else{
