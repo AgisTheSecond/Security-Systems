@@ -8,7 +8,7 @@ void kill_machine(const char *msg) {
     fprintf(stderr, "%s\n", msg);
     exit(1);
 }
-void confirm_hex(FILE *f,char *title,char *buf, size_t len) {
+void confirm_hex(FILE *f,char *title,const unsigned char *buf, size_t len) {
     char *hex = malloc(len*2 + 1);
     if (!hex) 
     {
@@ -70,7 +70,7 @@ int main(int argumentc,char *argumentv[]) {
             char *hex=argumentv[i];
             size_t bin_len = 0;
             if (sodium_hex2bin(bob_private, sizeof(bob_private), hex, strlen(hex), NULL, &bin_len, NULL) != 0 || bin_len != sizeof(bob_private)) {
-                kill_machine("Invalid hex input for Alice's private key");
+                kill_machine("Invalid hex input for Bob's private key");
             }
                 bob_is_produced=1; 
         }
