@@ -1,0 +1,30 @@
+Key Length: 1024 bits
+Encryption Time: 0.0000s
+Decryption Time: 0.0015s
+Signing Time: 0.0008s
+Verification Time: 0.0000s
+Peak Memory Usage (Encryption): 12 KB
+Peak Memory Usage (Decryption): 10 KB
+Peak Memory Usage (Signing): 11 KB
+Peak Memory Usage (Verification): 9 KB
+
+Key Length: 2048 bits
+Encryption Time: 0.0001s
+Decryption Time: 0.0043s
+Signing Time: 0.0041s
+Verification Time: 0.0000s
+Peak Memory Usage (Encryption): 25 KB
+Peak Memory Usage (Decryption): 23 KB
+Peak Memory Usage (Signing): 24 KB
+Peak Memory Usage (Verification): 22 KB
+
+Key Length: 4096 bits
+Encryption Time: 0.0002s
+Decryption Time: 0.0514s
+Signing Time: 0.0348s
+Verification Time: 0.0002s
+Peak Memory Usage (Encryption): 50 KB
+Peak Memory Usage (Decryption): 47 KB
+Peak Memory Usage (Signing): 48 KB
+Peak Memory Usage (Verification): 45 KB
+
