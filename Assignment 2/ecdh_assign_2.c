@@ -16,7 +16,7 @@ void confirm_hex(FILE *f,char *title,const unsigned char *buf, size_t len) {
     }
     
     sodium_bin2hex(hex, len*2 + 1, buf, len);
-    fprintf(f, "%s\n%s\n", title, hex);
+    fprintf(f, "%s \n %s \n", title, hex);
     free(hex);
 }
 
@@ -28,14 +28,14 @@ int main(int argumentc,char *argumentv[]) {
     }
 
     //  Alice generates key pair
-    unsigned char alice_private[crypto_box_SECRETKEYBYTES]={0};
-    unsigned char alice_public[crypto_box_PUBLICKEYBYTES]={0};
-    crypto_box_keypair(alice_public, alice_private); // same as crypto_scalarmult_base()
+    unsigned char alice_private[crypto_box_SECRETKEYBYTES];
+    unsigned char alice_public[crypto_box_PUBLICKEYBYTES];
+//    crypto_box_keypair(alice_public, alice_private); // same as crypto_scalarmult_base()
 
     //  Bob generates key pair
-    unsigned char bob_private[crypto_box_SECRETKEYBYTES]={0};
-    unsigned char bob_public[crypto_box_PUBLICKEYBYTES]={0};
-    crypto_box_keypair(bob_public, bob_private);
+    unsigned char bob_private[crypto_box_SECRETKEYBYTES];
+    unsigned char bob_public[crypto_box_PUBLICKEYBYTES];
+  //  crypto_box_keypair(bob_public, bob_private);
 
     //  computes shared secret+
     unsigned char S_A[crypto_scalarmult_BYTES];
@@ -46,8 +46,9 @@ int main(int argumentc,char *argumentv[]) {
     char context[crypto_kdf_CONTEXTBYTES+1];
     memset(context,0,crypto_kdf_CONTEXTBYTES+1);
     memcpy(context,"ECDH_KDF",8);
+    size_t bin_len;
 
-    for (int i = 1; i < argumentc; ++i)
+    for (int i = 1; i < argumentc; i++)
     {
         if (strcmp(argumentv[i],"-o")==0 && i+1<argumentc)
         {
@@ -58,9 +59,8 @@ int main(int argumentc,char *argumentv[]) {
         {
             i++;
             char *hex=argumentv[i];
-            size_t bin_len = 0;
-            if (sodium_hex2bin(alice_private, sizeof(alice_private), hex, strlen(hex), NULL, &bin_len, NULL) != 0 || bin_len != sizeof(alice_private)) {
-                kill_machine("Invalid hex input for Alice's private key");}
+            
+            sodium_hex2bin(alice_private, sizeof(alice_private), hex, strlen(hex), NULL, &bin_len, NULL); 
             alice_is_produced=1;
             
         }
@@ -68,11 +68,9 @@ int main(int argumentc,char *argumentv[]) {
         {
             i++;
             char *hex=argumentv[i];
-            size_t bin_len = 0;
-            if (sodium_hex2bin(bob_private, sizeof(bob_private), hex, strlen(hex), NULL, &bin_len, NULL) != 0 || bin_len != sizeof(bob_private)) {
-                kill_machine("Invalid hex input for Bob's private key");
-            }
-                bob_is_produced=1; 
+             
+            sodium_hex2bin(bob_private, sizeof(bob_private), hex, strlen(hex), NULL, &bin_len, NULL);
+            bob_is_produced=1; 
         }
         else if (strcmp(argumentv[i],"-c")==0 && i+1<argumentc)
         {
@@ -100,14 +98,14 @@ int main(int argumentc,char *argumentv[]) {
     
         if (!_file_) kill_machine("Missing -o <output file>");
 
-        if(alice_is_produced){
+        if(alice_is_produced==1){
             crypto_scalarmult_base(alice_public,alice_private);
         }
         else{
             crypto_box_keypair(alice_public,alice_private);
         }
         
-        if(bob_is_produced){
+        if(bob_is_produced==1){
             crypto_scalarmult_base(bob_public,bob_private);
         }
         else{
@@ -135,10 +133,13 @@ int main(int argumentc,char *argumentv[]) {
         FILE *f = fopen(_file_, "w");
         if (!f) kill_machine("Cannot open output file");
 
+        confirm_hex(f, "Alice's private Key:", alice_private, sizeof(alice_private));
         confirm_hex(f, "Alice's Public Key:", alice_public, sizeof(alice_public));
+        confirm_hex(f, "Bob's private Key:", bob_private, sizeof(bob_private));
         confirm_hex(f, "Bob's Public Key:", bob_public, sizeof(bob_public));
         confirm_hex(f, "Shared Secret (Alice):", S_A, sizeof(S_A));
         confirm_hex(f, "Shared Secret (Bob):", S_B, sizeof(S_B));
+
 
         if (sodium_memcmp(S_A, S_B, sizeof(S_A)) == 0)
             fprintf(f, "Shared secrets match!\n");
