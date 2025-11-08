@@ -171,7 +171,7 @@ Peak Memory Usage (Verification): 45 KB
 
 ---
 
-## 🧩 Compilation
+##   Compilation
 ### Manual Compilation
 ```bash
 gcc -Wall -O2 -o ecdh_assign_2 ecdh_assign_2.c -lsodium
@@ -180,17 +180,7 @@ gcc -Wall -O2 -o rsa_assign_2 rsa_assign_2.c -lcrypto -lgmp
 
 ---
 
-## Project Structure
-```
-2022030190_202030133_assign2/
-├── ecdh_assign_2.c
-├── rsa_assign_2.c
-├── Makefile
-├── README.md
-└── performance.txt
-```
 
----
 
 ##  Libraries Used
 
@@ -202,9 +192,9 @@ gcc -Wall -O2 -o rsa_assign_2 rsa_assign_2.c -lcrypto -lgmp
 
 ---
 
-## 🧑Authors & Contributions
+## Authors 
 
-| Name | Student ID | Contribution |
+| Name | Student ID |  |
 |------|-------------|--------------|
 | **Charalampos Mylonakis** | 202030133 | 
 | **Agisilaos Fotinakis** | 2022030190 | 
