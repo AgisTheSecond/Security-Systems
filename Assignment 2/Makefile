@@ -27,3 +27,4 @@ perf: rsa_assign_2
 # Clean binaries
 clean:
 	rm -f rsa_assign_2 ecdh_assign_2 *.o performance.txt
+s
