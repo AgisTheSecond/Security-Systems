@@ -1,0 +1,17 @@
+Alice's Public Key:
+c0dfe4f3d10ed52f3b10d0b4364d76bb52646f536acdde2302d4eafe3c816a3c
+Bob's Public Key:
+b4e73a4754dc220b83782351fb50fb599867dce48baba04191e28dcbe97bbd04
+Shared Secret (Alice):
+87e07352674d50254f7d8e16cf5265e83bef830d5dc2276ecaf3db8370364672
+Shared Secret (Bob):
+87e07352674d50254f7d8e16cf5265e83bef830d5dc2276ecaf3db8370364672
+Shared secrets match!
+Derived Encryption Key (Alice):
+45b3b047e6fed50de9e40f1ac5dd5eae0fa870af969b9c9e37a2b651602da410
+Derived Encryption Key (Bob):
+45b3b047e6fed50de9e40f1ac5dd5eae0fa870af969b9c9e37a2b651602da410
+Derived MAC Key (Alice):
+eaf91773ff45f2836159fa25246d5078bcbf51fbafe20b7e8a0201550806d86d
+Derived MAC Key (Bob):
+eaf91773ff45f2836159fa25246d5078bcbf51fbafe20b7e8a0201550806d86d

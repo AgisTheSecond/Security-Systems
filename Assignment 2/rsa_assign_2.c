@@ -189,9 +189,9 @@ void rsa_verify(const char *infile, const char *sigfile, mpz_t n, mpz_t e) {
     mpz_powm(h_check, sig, e, n);
 
     if (mpz_cmp(h, h_check) == 0)
-        printf("Signature is VALID ✅\n");
+        printf("Signature is VALID \n");
     else
-        printf("Signature is INVALID ❌\n");
+        printf("Signature is INVALID \n");
 
     mpz_clears(h, sig, h_check, NULL);
 }
@@ -276,9 +276,8 @@ void rsa_performance(const char *outfile) {
     }
 
     fclose(f);
-    printf("Performance written to %s ✅\n", outfile);
+    printf("Performance written to %s \n", outfile);
 }
-
 
 
 // ------------------------------------------------------

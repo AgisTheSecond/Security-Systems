@@ -1,17 +1,29 @@
-CC=gcc
-CFLAGS=-Wall -g
-LIBS=-lssl -lcrypto
+# === Assignment 2 Makefile ===
+CC = gcc
+CFLAGS = -Wall -O2
+LIBS_RSA = -lcrypto -lgmp
+LIBS_ECDH = -lsodium
 
-all: server client rclient
+# === Targets ===
 
-server: server.c
-        $(CC) $(CFLAGS) -o server server.c $(LIBS)
+.PHONY: all clean perf
+all:
+	$(MAKE) rsa_assign_2
+	$(MAKE) ecdh_assign_2
 
-client: client.c
-        $(CC) $(CFLAGS) -o client client.c $(LIBS)
 
-rclient: rclient.c
-        $(CC) $(CFLAGS) -o rclient rclient.c $(LIBS)
+# RSA Compilation
+rsa_assign_2: rsa_assign_2.c
+	$(CC) $(CFLAGS) -o rsa_assign_2 rsa_assign_2.c $(LIBS_RSA)
 
+# ECDH Compilation
+ecdh_assign_2: ecdh_assign_2.c
+	$(CC) $(CFLAGS) -o ecdh_assign_2 ecdh_assign_2.c $(LIBS_ECDH)
+
+# Run Performance Analysis
+perf: rsa_assign_2
+	./rsa_assign_2 -a performance.txt
+
+# Clean binaries
 clean:
-        rm -f server client rclient *.o
+	rm -f rsa_assign_2 ecdh_assign_2 *.o performance.txt
