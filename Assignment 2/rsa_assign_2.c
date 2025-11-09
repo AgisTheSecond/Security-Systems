@@ -6,10 +6,12 @@
 #include <string.h>
 #include <time.h>
 #include <sys/resource.h>  // getrusage
+#include <unistd.h>
 
 // ------------------------------------------------------
 // Utilities
 void die(const char *msg) { fprintf(stderr, "Error: %s\n", msg); exit(1); }
+
 
 
 // RSA Key Generation
@@ -222,6 +224,7 @@ void rsa_performance(const char *outfile) {
         
         //get ram usage before and start time
         getrusage(RUSAGE_SELF, &usage_before);
+        
         start_time = clock();
         //call the encryption function
         sprintf(buf, "public_%d.key", bits[i]);
@@ -231,17 +234,20 @@ void rsa_performance(const char *outfile) {
         // get finish time and ram usage
         end_time = clock();
         getrusage(RUSAGE_SELF, &usage_after);
+        
     
         // Calculate CPU time used
         cpu_time_used = ((double)(end_time - start_time)) / CLOCKS_PER_SEC;
 
         // Calculate memory usage
         enc_mem = usage_after.ru_maxrss - usage_before.ru_maxrss ;
+        
     
         // Write the execution time to the output file
         fprintf(f,"Key Length: %d bits\n",bits[i]);
         fprintf(f, "Encryption Time: %f s\n", cpu_time_used);
 
+        
         getrusage(RUSAGE_SELF, &usage_before);
         start_time = clock();
         //call the decryption function
@@ -254,12 +260,14 @@ void rsa_performance(const char *outfile) {
         
         end_time = clock();
         getrusage(RUSAGE_SELF, &usage_after);
+        
     
         
         cpu_time_used = ((double)(end_time - start_time)) / CLOCKS_PER_SEC;
 
         
         dec_mem = usage_after.ru_maxrss - usage_before.ru_maxrss;
+        
     
         
         fprintf(f, "Decryption Time: %f s\n", cpu_time_used);
@@ -275,17 +283,19 @@ void rsa_performance(const char *outfile) {
         
         end_time = clock();
         getrusage(RUSAGE_SELF, &usage_after);
+        
     
         
         cpu_time_used = ((double)(end_time - start_time)) / CLOCKS_PER_SEC;
 
         
         sign_mem = usage_after.ru_maxrss - usage_before.ru_maxrss;
+        
     
         
         fprintf(f, "Signing time %f s\n", cpu_time_used);
 
-
+        
         getrusage(RUSAGE_SELF, &usage_before);
         start_time = clock();
 
@@ -297,6 +307,7 @@ void rsa_performance(const char *outfile) {
         
         end_time = clock();
         getrusage(RUSAGE_SELF, &usage_after);
+        
     
     
         
@@ -304,6 +315,7 @@ void rsa_performance(const char *outfile) {
 
         
         verf_mem = usage_after.ru_maxrss - usage_before.ru_maxrss;
+        
     
         
         fprintf(f, "Verification time %f s\n", cpu_time_used);
