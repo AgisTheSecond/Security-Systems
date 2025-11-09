@@ -2,12 +2,14 @@
 #include <sodium.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 
 
 void kill_machine(const char *msg) {
     fprintf(stderr, "%s\n", msg);
     exit(1);
 }
+
 void confirm_hex(FILE *f,char *title,const unsigned char *buf, size_t len) {
     
     fprintf(f, "%s\n", title );
@@ -25,17 +27,17 @@ int main(int argumentc,char *argumentv[]) {
         return 1;
     }
 
-    //  Alice generates key pair
+    //  Alice's key pair
     unsigned char alice_private[crypto_box_SECRETKEYBYTES];
     unsigned char alice_public[crypto_box_PUBLICKEYBYTES];
-//    crypto_box_keypair(alice_public, alice_private); // same as crypto_scalarmult_base()
 
-    //  Bob generates key pair
+
+    //  Bob's key pair
     unsigned char bob_private[crypto_box_SECRETKEYBYTES];
     unsigned char bob_public[crypto_box_PUBLICKEYBYTES];
-  //  crypto_box_keypair(bob_public, bob_private);
 
-    //  computes shared secret+
+
+    //  shared secret
     unsigned char S_A[crypto_scalarmult_BYTES];
     unsigned char S_B[crypto_scalarmult_BYTES];
 
@@ -46,6 +48,7 @@ int main(int argumentc,char *argumentv[]) {
     memcpy(context,"ECDH_KDF",8);
     size_t bin_len;
 
+    //  reading arguments from command line
     for (int i = 1; i < argumentc; i++)
     {
         if (strcmp(argumentv[i],"-o")==0 && i+1<argumentc)
@@ -56,25 +59,26 @@ int main(int argumentc,char *argumentv[]) {
         else if(strcmp(argumentv[i],"-a")==0 && i+1<argumentc)
         {
             i++;
-                        //char *hex=argumentv[i];
+                        
 
             
-            sodium_hex2bin(alice_private, sizeof(alice_private), argumentv[i], strlen(argumentv[i]), NULL, &bin_len, NULL); 
+            sodium_hex2bin(alice_private, sizeof(alice_private), argumentv[i], strlen(argumentv[i]), NULL, &bin_len, NULL);
+            
             alice_is_produced=1;
             
         }
         else if(strcmp(argumentv[i],"-b")==0 && i+1<argumentc)
         {
             i++;
-            //char *hex=argumentv[i];
-             
+                         
             sodium_hex2bin(bob_private, sizeof(bob_private), argumentv[i], strlen(argumentv[i]), NULL, &bin_len, NULL);
+            
             bob_is_produced=1; 
         }
         else if (strcmp(argumentv[i],"-c")==0 && i+1<argumentc)
         {
             i++;
-            char *ctx = argumentv[i];
+            char *ctx = argumentv[i+1];
             size_t L = strlen(ctx);
             if (L != crypto_kdf_CONTEXTBYTES) kill_machine("Invalid context length");
             memcpy(context, ctx, crypto_kdf_CONTEXTBYTES);
@@ -85,7 +89,8 @@ int main(int argumentc,char *argumentv[]) {
             printf("Operations:\n-o path Path to output file : '_file_'\n"
                    "(Optional in hexadecimal format) -a number Alice's private key\n"
                     "(Optional in hexadecimal format) -b number Bob's private key\n"
-                    "-h Help");
+                    "-c context Context string for key derivation(default : ECDH_KDF)\n"
+                    "-h Help"); 
 
             }
         else
@@ -94,18 +99,20 @@ int main(int argumentc,char *argumentv[]) {
             }
         
     }
-    
+        //  Generate the keys and the shared secret by command line input(if it was given) or randomly(if it was not)
         if (!_file_) kill_machine("Missing -o <output file>");
 
-        if(alice_is_produced ){
+        if(alice_is_produced){
             crypto_scalarmult_base(alice_public,alice_private);
+            
         }
         else{
             crypto_box_keypair(alice_public,alice_private);
         }
         
-        if(bob_is_produced ){
+        if(bob_is_produced){
             crypto_scalarmult_base(bob_public,bob_private);
+            
         }
         else{
             crypto_box_keypair(bob_public,bob_private);
@@ -146,8 +153,15 @@ int main(int argumentc,char *argumentv[]) {
         confirm_hex(f, "Derived Encryption Key (Alice):", enc_a, sizeof(enc_a));
         confirm_hex(f, "Derived Encryption Key (Bob):", enc_b, sizeof(enc_b));
 
+        if (sodium_memcmp(enc_a, enc_b, sizeof(enc_a)) == 0)
+            fprintf(f, "Derived encryption keys match!\n");
+
+
         confirm_hex(f, "Derived MAC Key (Alice):", mac_a, sizeof(mac_a));
         confirm_hex(f, "Derived MAC Key (Bob):", mac_b, sizeof(mac_b));
+
+        if (sodium_memcmp(mac_a, mac_b, sizeof(mac_a)) == 0)
+            fprintf(f, "Derived MAC keys match!\n");
 
         fclose(f);
 

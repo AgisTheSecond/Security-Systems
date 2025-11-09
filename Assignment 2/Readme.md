@@ -12,7 +12,7 @@ This project implements two major cryptographic mechanisms in C:
 1. **Elliptic Curve Diffie–Hellman (ECDH)** with Key Derivation using **libsodium**
 2. **RSA (Rivest–Shamir–Adleman)** with **Digital Signatures** and **Performance Analysis** using **GMP** and **OpenSSL**
 
-Both tools are command-line programs built fully from scratch, following the specifications of the assignment.
+
 
 ---
 
@@ -23,12 +23,15 @@ Both tools are command-line programs built fully from scratch, following the spe
 Implements a complete **Elliptic Curve Diffie–Hellman key exchange** using Curve25519 and derives two symmetric keys via libsodium’s KDF.
 
 ### **Main Features**
+- Reads command line input with different parameters
 - Uses **libsodium** built-in Curve25519 (`crypto_scalarmult_base`)
-- Optional manual hex private keys for Alice and Bob
+- Generates private and public keys as well as the shared secret
+- Optional manual hex private keys for Alice and Bob and custom context for KDF
 - Derives:
   - **Encryption Key** (32 bytes)
   - **MAC Key** (32 bytes)
-- Outputs all values in hexadecimal format
+- Outputs all values in hexadecimal format and checks if the shared secret and the derived keys match
+
 
 ---
 
@@ -80,7 +83,7 @@ Includes key generation, encryption/decryption, digital signing & verification, 
 | **`rsa_crypt()`** | Performs encryption/decryption of files via modular exponentiation |
 | **`rsa_sign()`** | Computes SHA-256 hash of input and signs it (`hash^d mod n`) |
 | **`rsa_verify()`** | Verifies signature (`sig^e mod n`) and compares with SHA-256 hash |
-| **`rsa_performance()`** | Measures encryption, decryption, signing and verification times for three key lengths |
+| **`rsa_performance()`** | Measures encryption, decryption, signing and verification times and memory usage for three key lengths(1024,2048,4096) |
 
 ---
 

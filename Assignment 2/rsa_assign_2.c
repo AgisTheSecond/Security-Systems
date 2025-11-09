@@ -11,32 +11,7 @@
 // Utilities
 void die(const char *msg) { fprintf(stderr, "Error: %s\n", msg); exit(1); }
 
-double time_diff(clock_t start, clock_t end) {
-    return (double)(end - start) / CLOCKS_PER_SEC;
-}
-// static long mem_peak_kb(void) {
-//     struct rusage ru;
-//     getrusage(RUSAGE_SELF, &ru);
-//     // Σε Linux επιστρέφει KB. Σε μερικά BSD/macOS είναι bytes — εδώ θεωρούμε Linux (Ubuntu VM).
-//     return ru.ru_maxrss;
-// }
-long current_memory_kb(void) {
-    FILE *f = fopen("/proc/self/status", "r");
-    if (!f) return 0;
-    char line[256];
-    long mem = 0;
-    while (fgets(line, sizeof(line), f)) {
-        if (strncmp(line, "VmRSS:", 6) == 0) {
-            sscanf(line + 6, "%ld", &mem);
-            break;
-        }
-    }
-    fclose(f);
-    return mem;
-}
 
-
-// ------------------------------------------------------
 // RSA Key Generation
 void rsa_generate_keys(mpz_t n, mpz_t e, mpz_t d, unsigned int key_bits) {
     gmp_randstate_t state;
@@ -68,8 +43,8 @@ void rsa_generate_keys(mpz_t n, mpz_t e, mpz_t d, unsigned int key_bits) {
     gmp_randclear(state);
 }
 
-// ------------------------------------------------------
-// Save / Load keys
+
+// Save keys
 void save_key(const char *filename, mpz_t n, mpz_t exp) {
     FILE *f = fopen(filename, "w");
     if (!f) die("Cannot write key file");
@@ -77,6 +52,7 @@ void save_key(const char *filename, mpz_t n, mpz_t exp) {
     fclose(f);
 }
 
+//Load keys
 void load_key(const char *filename, mpz_t n, mpz_t exp) {
     FILE *f = fopen(filename, "r");
     if (!f) die("Cannot read key file");
@@ -84,7 +60,7 @@ void load_key(const char *filename, mpz_t n, mpz_t exp) {
     fclose(f);
 }
 
-// ------------------------------------------------------
+
 // Encrypt / Decrypt
 void rsa_crypt(const char *infile, const char *outfile, mpz_t n, mpz_t exp) {
     FILE *in = fopen(infile, "rb");
@@ -116,18 +92,18 @@ void rsa_crypt(const char *infile, const char *outfile, mpz_t n, mpz_t exp) {
     mpz_clears(msg, res, NULL);
 }
 
-// ------------------------------------------------------
+
 // SHA256 hash helper (EVP API for OpenSSL 3)
 void compute_sha256(const char *filename, unsigned char hash[SHA256_DIGEST_LENGTH]) {
     FILE *f = fopen(filename, "rb");
     if (!f) {
-        // Αν δεν υπάρχει, το δημιουργεί
+        // Creates a new one if it doesn't exist
         printf("File '%s' not found. Creating a new one...\n", filename);
         FILE *newf = fopen(filename, "w");
         if (!newf) die("Cannot create input file");
         fprintf(newf, "Auto-generated test file for RSA signing.\n");
         fclose(newf);
-        // Τώρα το ανοίγουμε ξανά για hashing
+        // Open file again for hashing
         f = fopen(filename, "rb");
         if (!f) die("Still cannot open input after creation!");
     }
@@ -152,7 +128,7 @@ void compute_sha256(const char *filename, unsigned char hash[SHA256_DIGEST_LENGT
     fclose(f);
 }
 
-// ------------------------------------------------------
+
 // RSA Sign (SHA256 + private key)
 void rsa_sign(const char *infile, const char *sigfile, mpz_t n, mpz_t d) {
     unsigned char hash[SHA256_DIGEST_LENGTH];
@@ -171,7 +147,7 @@ void rsa_sign(const char *infile, const char *sigfile, mpz_t n, mpz_t d) {
     mpz_clears(h, sig, NULL);
 }
 
-// ------------------------------------------------------
+
 // RSA Verify
 void rsa_verify(const char *infile, const char *sigfile, mpz_t n, mpz_t e) {
     unsigned char hash[SHA256_DIGEST_LENGTH];
@@ -196,83 +172,149 @@ void rsa_verify(const char *infile, const char *sigfile, mpz_t n, mpz_t e) {
     mpz_clears(h, sig, h_check, NULL);
 }
 
-// ------------------------------------------------------
+
 // Performance Test
 void rsa_performance(const char *outfile) {
+
+    mpz_t n, e, d;
+    mpz_inits(n, e, d, NULL);
+
+    //Key generation for 1024,2048,4096 bits
+    rsa_generate_keys(n ,e ,d ,1024);
+    char pub1[64], priv1[64];
+    sprintf(pub1, "public_%d.key", 1024);
+    sprintf(priv1, "private_%d.key", 1024);
+    save_key(pub1, n, e);
+    save_key(priv1, n, d);
+    printf("Generated %d-bit key pair.\n", 1024);
+
+    rsa_generate_keys(n ,e ,d ,2048);
+    char pub2[64], priv2[64];
+    sprintf(pub2, "public_%d.key", 2048);
+    sprintf(priv2, "private_%d.key", 2048);
+    save_key(pub2, n, e);
+    save_key(priv2, n, d);
+    printf("Generated %d-bit key pair.\n", 2048);
+
+    rsa_generate_keys(n ,e ,d ,4096);
+    char pub3[64], priv3[64];
+    sprintf(pub3, "public_%d.key", 4096);
+    sprintf(priv3, "private_%d.key", 4096);
+    save_key(pub3, n, e);
+    save_key(priv3, n, d);
+    printf("Generated %d-bit key pair.\n", 4096);
+
+
     FILE *f = fopen(outfile, "w");
     if (!f) die("Cannot open performance file");
 
-    int bits_list[3] = {1024, 2048, 4096};
+    clock_t start_time, end_time;
+    struct rusage usage_before, usage_after;
+    double cpu_time_used;
+    long enc_mem, dec_mem, sign_mem, verf_mem;
+    int bits[3] = {1024 ,2048 ,4096};
+    char buf[64];
+    char bufo[64];
 
-    for (int k = 0; k < 3; k++) {
-        int bits = bits_list[k];
+    fprintf(f, "\n-------------- Performance Analysis File --------------\n\n");
 
-        // Key generation
-        mpz_t n, e, d, msg, c, r, H, S, Hchk;
-        mpz_inits(n, e, d, msg, c, r, H, S, Hchk, NULL);
-        rsa_generate_keys(n, e, d, bits);
+    for(int i = 0; i < 3; i++){
+        
+        //get ram usage before and start time
+        getrusage(RUSAGE_SELF, &usage_before);
+        start_time = clock();
+        //call the encryption function
+        sprintf(buf, "public_%d.key", bits[i]);
+        load_key(buf ,n ,e);
+        sprintf(buf, "ciphertext_%d.txt", bits[i]);
+        rsa_crypt("plaintext.txt" ,buf ,n ,e);
+        // get finish time and ram usage
+        end_time = clock();
+        getrusage(RUSAGE_SELF, &usage_after);
+    
+        // Calculate CPU time used
+        cpu_time_used = ((double)(end_time - start_time)) / CLOCKS_PER_SEC;
 
-        // Prepare dummy data for encryption/decryption/sign/verify
-        mpz_set_ui(msg, 12345);
-        unsigned char hash[32];
-        for (int i = 0; i < 32; i++) hash[i] = (unsigned char)(rand() & 0xFF);
-        mpz_import(H, 32, 1, 1, 0, 0, hash);
+        // Calculate memory usage
+        enc_mem = usage_after.ru_maxrss - usage_before.ru_maxrss ;
+    
+        // Write the execution time to the output file
+        fprintf(f,"Key Length: %d bits\n",bits[i]);
+        fprintf(f, "Encryption Time: %f s\n", cpu_time_used);
 
-        // --- Measure times ---
-        clock_t start, end;
-        double t_enc, t_dec, t_sign, t_ver;
+        getrusage(RUSAGE_SELF, &usage_before);
+        start_time = clock();
+        //call the decryption function
+        sprintf(buf, "private_%d.key", bits[i]);
+        load_key(buf, n, d); 
+        sprintf(buf, "ciphertext_%d.txt", bits[i]);
+        sprintf(bufo, "decryptedtext_%d.txt", bits[i]);
+        rsa_crypt(buf, bufo, n, d);
+        
+        
+        end_time = clock();
+        getrusage(RUSAGE_SELF, &usage_after);
+    
+        
+        cpu_time_used = ((double)(end_time - start_time)) / CLOCKS_PER_SEC;
 
-        // Encryption
-        start = clock();
-        mpz_powm(c, msg, e, n);
-        end = clock();
-        t_enc = time_diff(start, end);
+        
+        dec_mem = usage_after.ru_maxrss - usage_before.ru_maxrss;
+    
+        
+        fprintf(f, "Decryption Time: %f s\n", cpu_time_used);
 
-        // Decryption
-        start = clock();
-        mpz_powm(r, c, d, n);
-        end = clock();
-        t_dec = time_diff(start, end);
+        getrusage(RUSAGE_SELF, &usage_before);
+        start_time = clock();
 
-        // Signing
-        start = clock();
-        mpz_powm(S, H, d, n);
-        end = clock();
-        t_sign = time_diff(start, end);
+        sprintf(buf, "private_%d.key", bits[i]);
+        load_key(buf, n, d); 
+        sprintf(buf, "signature_output_%d.txt", bits[i]);
+        rsa_sign("input.txt", buf, n, d);
+        
+        
+        end_time = clock();
+        getrusage(RUSAGE_SELF, &usage_after);
+    
+        
+        cpu_time_used = ((double)(end_time - start_time)) / CLOCKS_PER_SEC;
 
-        // Verification
-        start = clock();
-        mpz_powm(Hchk, S, e, n);
-        end = clock();
-        t_ver = time_diff(start, end);
+        
+        sign_mem = usage_after.ru_maxrss - usage_before.ru_maxrss;
+    
+        
+        fprintf(f, "Signing time %f s\n", cpu_time_used);
 
-        // --- Write to file ---
-        fprintf(f, "Key Length: %d bits\n", bits);
-        fprintf(f, "Encryption Time: %.4fs\n", t_enc);
-        fprintf(f, "Decryption Time: %.4fs\n", t_dec);
-        fprintf(f, "Signing Time: %.4fs\n", t_sign);
-        fprintf(f, "Verification Time: %.4fs\n", t_ver);
 
-        // "Fictionalized" Peak Memory numbers for formatted output
-        if (bits == 1024) {
-            fprintf(f, "Peak Memory Usage (Encryption): 12 KB\n");
-            fprintf(f, "Peak Memory Usage (Decryption): 10 KB\n");
-            fprintf(f, "Peak Memory Usage (Signing): 11 KB\n");
-            fprintf(f, "Peak Memory Usage (Verification): 9 KB\n");
-        } else if (bits == 2048) {
-            fprintf(f, "Peak Memory Usage (Encryption): 25 KB\n");
-            fprintf(f, "Peak Memory Usage (Decryption): 23 KB\n");
-            fprintf(f, "Peak Memory Usage (Signing): 24 KB\n");
-            fprintf(f, "Peak Memory Usage (Verification): 22 KB\n");
-        } else if (bits == 4096) {
-            fprintf(f, "Peak Memory Usage (Encryption): 50 KB\n");
-            fprintf(f, "Peak Memory Usage (Decryption): 47 KB\n");
-            fprintf(f, "Peak Memory Usage (Signing): 48 KB\n");
-            fprintf(f, "Peak Memory Usage (Verification): 45 KB\n");
-        }
-        fprintf(f, "\n");
+        getrusage(RUSAGE_SELF, &usage_before);
+        start_time = clock();
 
-        mpz_clears(n, e, d, msg, c, r, H, S, Hchk, NULL);
+        sprintf(buf, "public_%d.key", bits[i]);
+        load_key(buf, n, d); 
+        sprintf(buf, "signature_output_%d.txt", bits[i]);
+        rsa_verify("input.txt", buf, n, d);
+      
+        
+        end_time = clock();
+        getrusage(RUSAGE_SELF, &usage_after);
+    
+    
+        
+        cpu_time_used = ((double)(end_time - start_time)) / CLOCKS_PER_SEC;
+
+        
+        verf_mem = usage_after.ru_maxrss - usage_before.ru_maxrss;
+    
+        
+        fprintf(f, "Verification time %f s\n", cpu_time_used);
+        // Write the peak memory usage in output file
+        fprintf(f, "Peak Memory Usage (Encryption): %ld KBytes\n", enc_mem);
+        fprintf(f, "Peak Memory Usage (Decryption): %ld KBytes\n", dec_mem);
+        fprintf(f, "Peak Memory Usage (Signing): %ld KBytes\n", sign_mem);
+        fprintf(f, "Peak Memory Usage (Verification): %ld KBytes\n", verf_mem);
+
+
+
     }
 
     fclose(f);
@@ -280,7 +322,7 @@ void rsa_performance(const char *outfile) {
 }
 
 
-// ------------------------------------------------------
+
 // MAIN
 int main(int argc, char *argv[]) {
     if (argc < 2) {
