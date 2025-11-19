@@ -197,6 +197,11 @@ int get_sha256(const char *filename, char *output) {
 	FILE *(*original_fopen)(const char *, const char *);
 	original_fopen = dlsym(RTLD_NEXT, "fopen");
 
+    int (*original_fclose)(FILE *);
+    original_fclose = dlsym(RTLD_NEXT, "fclose");
+
+
+
 
     FILE *f = original_fopen(filename, "rb");
     if (!f) {
@@ -209,7 +214,7 @@ int get_sha256(const char *filename, char *output) {
     EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
     if (!mdctx) {
         // If the context can't be created, close the file, print an error, and return.
-        fclose(f);
+        original_fclose(f);
         fprintf(stderr, "Failed to create digest context\n");
         return -2;
     }
@@ -222,7 +227,7 @@ int get_sha256(const char *filename, char *output) {
     // Initialize the digest context for SHA-256.
     if (EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL) != 1) {
         // If initialization fails, clean up resources and return an error.
-        fclose(f);
+        original_fclose(f);
         EVP_MD_CTX_free(mdctx);
         fprintf(stderr, "Failed to initialize digest\n");
         return -3;
@@ -232,7 +237,7 @@ int get_sha256(const char *filename, char *output) {
     while ((bytes = fread(buffer, 1, sizeof(buffer), f)) > 0) {
         if (EVP_DigestUpdate(mdctx, buffer, bytes) != 1) {
             // If updating the digest fails, handle cleanup and error notification.
-            fclose(f);
+            original_fclose(f);
             EVP_MD_CTX_free(mdctx);
             fprintf(stderr, "Failed to update digest\n");
             return -4;
@@ -242,14 +247,14 @@ int get_sha256(const char *filename, char *output) {
     // Finalize the digest, i.e., complete the hash computation.
     if (EVP_DigestFinal_ex(mdctx, md_value, &md_len) != 1) {
         // If finalization fails, perform cleanup and return an error.
-        fclose(f);
+        original_fclose(f);
         EVP_MD_CTX_free(mdctx);
         fprintf(stderr, "Failed to finalize digest\n");
         return -5;
     }
 
     // Close the file and free the digest context now that the hash is computed.
-    fclose(f);
+    original_fclose(f);
     EVP_MD_CTX_free(mdctx);
 
     // Convert the binary hash to a hexadecimal string.

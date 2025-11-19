@@ -1,5 +1,9 @@
 #include <stdio.h>
 #include <string.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <unistd.h>
+
 
 int main() 
 {
@@ -14,6 +18,7 @@ int main()
 
 	char testFile_1[] = "testFile_1";
 	char testFile_2[] = "testFile_2";
+	char test_append[] = "this is appended";
 
 
 
@@ -31,8 +36,7 @@ int main()
 
 	}
 
-
-	/* add your code here */
+		/* add your code here */
 
 	//test open and write for files without permission
 	file = fopen(testFile_1,"w+");
@@ -63,5 +67,8 @@ int main()
 	file = fopen(filenames[2], "a");
 	fwrite(test_append, sizeof(test_append), 1, file);
 	fclose(file);
+
+
+
 
 }
