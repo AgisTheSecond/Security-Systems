@@ -54,7 +54,9 @@ fopen(const char *path, const char *mode)
 	logC.time = *gmtime(&t);
 	memset(logC.filehash, 0, SHA256_DIGEST_LENGTH * 2 + 1);
 
-	int existed = access(path, F_OK) != -1;
+	struct stat st;
+    int existed = (stat(path, &st) == 0);
+
 
 	FILE *original_fopen_ret;
 	FILE *(*original_fopen)(const char*, const char*);
@@ -73,6 +75,7 @@ fopen(const char *path, const char *mode)
     	
     	logC.file = abs_path;
 	
+    /*Determine operation type*/
 	if (original_fopen_ret != NULL && !existed){
 		logC.operation = 0;
 		//memcpy(logC.fingerprint, NULL_SHA256, SHA256_DIGEST_LENGTH*2 + 1);
@@ -130,6 +133,7 @@ fwrite(const void *ptr, size_t size, size_t nmemb, FILE *stream)
 
 
 	/* add your code here */
+    /*Detect if the write was denied*/
 	if(original_fwrite_ret != nmemb){
         logC.action_denied = 1;
     }else{
@@ -175,6 +179,7 @@ fclose(FILE *stream)
 
 
 	/* add your code here */
+    /*Check if close was denied*/
 	if(original_fclose_ret != 0){
         logC.action_denied = 1;
     }else{
@@ -205,38 +210,38 @@ int get_sha256(const char *filename, char *output) {
 
     FILE *f = original_fopen(filename, "rb");
     if (!f) {
-        // If the file can't be opened, print an error message and return a code indicating failure.
+        
         fprintf(stderr, "Failed to open file: %s\n", filename);
         return -1;
     }
 
-    // Create a new OpenSSL digest context for SHA-256 hashing.
+    /* Create a new OpenSSL digest context for SHA-256 hashing*/
     EVP_MD_CTX *mdctx = EVP_MD_CTX_new();
     if (!mdctx) {
-        // If the context can't be created, close the file, print an error, and return.
+        
         original_fclose(f);
         fprintf(stderr, "Failed to create digest context\n");
         return -2;
     }
 
-    unsigned char md_value[EVP_MAX_MD_SIZE];  // Buffer to hold the resulting hash.
-    unsigned int md_len;                     // Variable to hold the length of the hash.
-    unsigned char buffer[1024];              // Buffer to hold file data for hashing.
+    unsigned char md_value[EVP_MAX_MD_SIZE];  
+    unsigned int md_len;                     
+    unsigned char buffer[1024];              
     size_t bytes;
 
-    // Initialize the digest context for SHA-256.
+    /* Initialize the digest context for SHA-256*/
     if (EVP_DigestInit_ex(mdctx, EVP_sha256(), NULL) != 1) {
-        // If initialization fails, clean up resources and return an error.
+        /* If initialization fails, clean up resources and return an error.*/
         original_fclose(f);
         EVP_MD_CTX_free(mdctx);
         fprintf(stderr, "Failed to initialize digest\n");
         return -3;
     }
 
-    // Read from the file and update the digest incrementally.
+    /* Read from the file and update the digest incrementally*/
     while ((bytes = fread(buffer, 1, sizeof(buffer), f)) > 0) {
         if (EVP_DigestUpdate(mdctx, buffer, bytes) != 1) {
-            // If updating the digest fails, handle cleanup and error notification.
+            
             original_fclose(f);
             EVP_MD_CTX_free(mdctx);
             fprintf(stderr, "Failed to update digest\n");
@@ -244,26 +249,26 @@ int get_sha256(const char *filename, char *output) {
         }
     }
 
-    // Finalize the digest, i.e., complete the hash computation.
+    /* Finalize the digest, i.e., complete the hash computation*/
     if (EVP_DigestFinal_ex(mdctx, md_value, &md_len) != 1) {
-        // If finalization fails, perform cleanup and return an error.
+        /* If finalization fails, perform cleanup and return an error*/
         original_fclose(f);
         EVP_MD_CTX_free(mdctx);
         fprintf(stderr, "Failed to finalize digest\n");
         return -5;
     }
 
-    // Close the file and free the digest context now that the hash is computed.
+    /* Close the file and free the digest context now that the hash is computed*/
     original_fclose(f);
     EVP_MD_CTX_free(mdctx);
 
-    // Convert the binary hash to a hexadecimal string.
+    /* Convert the binary hash to a hexadecimal string.*/
     for (int i = 0; i < md_len; i++) {
         sprintf(output + (i * 2), "%02x", md_value[i]);
     }
-    output[md_len * 2] = '\0';  // Null-terminate the output string to make it a proper C string.
+    output[md_len * 2] = '\0';  
 
-    return 0;  // Return success.
+    return 0;  
 }
 
 
@@ -275,11 +280,11 @@ void write_log(struct log_entry logC) {
 	int (*original_fclose)(FILE *) = dlsym(RTLD_NEXT, "fclose");
 	
 
-
+    /*check if log file opens then write the log*/
     FILE *fp = original_fopen(LOG_FILE, "a");
     if (!fp) {
         fprintf(stderr, "Error opening log file.\n");
-        return; // Exit the function if the file couldn't be opened.
+        return; 
     }
 
     fprintf(fp, "%d,%d,%s,%d,%d,%02d-%02d-%d,%02d:%02d:%02d,%s\n",
