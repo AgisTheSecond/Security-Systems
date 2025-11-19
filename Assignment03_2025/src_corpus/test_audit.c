@@ -16,9 +16,9 @@ int main()
 			"file_5", "file_6", "file_7", 		
 			"file_8", "file_9"};
 
-	char testFile_1[] = "testFile_1";
-	char testFile_2[] = "testFile_2";
-	char test_append[] = "this is appended";
+	//char testFile_1[] = "testFile_1";
+	//char testFile_2[] = "testFile_2";
+	char test_append[] = "\nthis is appended";
 
 
 
@@ -38,34 +38,29 @@ int main()
 
 		/* add your code here */
 
-	//test open and write for files without permission
-	file = fopen(testFile_1,"w+");
-	if(file != NULL){
-		fprintf(file, "Junks for File 1");
-		fclose(file);
-	}
+	/*test open and write for files without permission*/
+	char deniedFiles[6][20] = {
+    "denied1", "denied2", "denied3",
+    "denied4", "denied5", "denied6"
+};
 
-	file = fopen(testFile_2,"w+");
-	if(file != NULL){
-		fprintf(file, "Junks for File 2");
-		fclose(file);
-	}
+for (int i = 0; i < 6; i++) {
+    file = fopen(deniedFiles[i], "w");
+    if (file) fclose(file);
+    chmod(deniedFiles[i], 0);
+}
 
-	chmod(testFile_1, 0);
-	chmod(testFile_2, 0);
+for (int r = 0; r < 10; r++) {
+    for (int i = 0; i < 6; i++) {
+        file = fopen(deniedFiles[i], "r");
+        if (file) fclose(file);
+    }
+}
 
-	for(int i=0;i<7;i++){
-		file = fopen(testFile_1, "r");
-		if(file != NULL)
-			fclose(file);
-		file = fopen(testFile_2, "r");
-		if(file != NULL)
-			fclose(file);
-	}
 
-	//test for append in file
+	/*test for append in file*/
 	file = fopen(filenames[2], "a");
-	fwrite(test_append, sizeof(test_append), 1, file);
+	fwrite(test_append, strlen(test_append), 1, file);
 	fclose(file);
 
 
