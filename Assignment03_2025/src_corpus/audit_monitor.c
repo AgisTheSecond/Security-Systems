@@ -11,19 +11,20 @@ struct log_entry {
 
 	char *file; /* filename (string) */
 
-	time_t date; /* file access date - utc*/
-	time_t time; /* file access time - utc*/
+	struct tm time; 
 
 	int operation; /* access type values [0-3] */
 	int action_denied; /* is action denied values [0-1] */
 
-	char *filehash; /* file hash - sha256 - evp */
+	char filehash[SHA256_DIGEST_LENGTH * 2 + 1]; /* file hash - sha256 - evp */
 
 	/* add here other fields if necessary */
 	/* ... */
 	/* ... */
 
 };
+
+#define MAXUSERNO 100
 
 
 void
@@ -49,10 +50,9 @@ list_unauthorized_accesses(FILE *log)
 {
 
 	/* add your code here */
-	/* ... */
-	/* ... */
-	/* ... */
-	/* ... */
+	int users[MAXUSERNO][2]
+
+	
 
 	return;
 
